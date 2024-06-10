@@ -42,6 +42,10 @@
         - SmallMobMask
         layer:
         - SmallMobLayer
+  - type: Item
+    size: Ginormous
+  - type: MultiHandedItem
+    handsNeeded: 3
   - type: MobState
   - type: MobThresholds
     thresholds:
