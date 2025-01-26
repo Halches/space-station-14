@@ -136,6 +136,8 @@
     # ninja are masters of sneaking around relatively quickly, won't break cloak
     walkModifier: 1.1
     sprintModifier: 1.3
+  - type: FootstepModifier
+    footstepSoundCollection: null
 # Corvax-HiddenDesc-Start
   - type: HiddenDescription
     entries:
@@ -307,6 +309,8 @@
       shoes:
       - state: equipped-FEET
         offset: "0, -0.02"
+      - state: equipped-FEET-reptilian # Corvax reptilian
+        offset: "0, -0.02"
   - type: Item
     size: Small
     sprite: Clothing/Shoes/Specific/large_clown.rsi
@@ -327,6 +331,8 @@
     clothingVisuals:
       shoes:
       - state: equipped-FEET
+        offset: "0, -0.04"
+      - state: equipped-FEET-reptilian # Corvax reptilian
         offset: "0, -0.04"
   - type: Item
     sprite: Clothing/Shoes/Specific/skates.rsi
