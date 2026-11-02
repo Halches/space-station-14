@@ -1,0 +1,41 @@
+name: Сообщить о проблеме
+description: Если что-то работает не так, как ожидалось.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо, что уделяете время написанию баг-репорта.
+        Для обратной связи и помощи в работе с Space Station 14, присоединяйтесь к нашему серверу в [Discord](https://discord.station14.ru).
+  - type: input
+    attributes:
+      label: В какой версии игры происходит ошибка?
+      description: Вы можете узнать версию, нажав на кнопку "Обновления" в игре и посмотрев версию в правом нижнем углу окна обновлений.
+      placeholder: syndicate/aa1337b
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Описание
+      description: |
+        Краткое и ясное описание этой проблемы.
+        Если проблему будет видно на скриншоте, прикрепите скриншот.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Шаги воспроизведения
+      description: Опишите, что нужно сделать для воспроизведения проблемы.
+      placeholder: |
+        1. Присоединиться к раунду за клоуна
+        2. Взять велосипедный клаксон
+        3. Активировать клаксон в руках
+        4. Получить ошибку 
+        ...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Дополнительный контекст
+      description: Дополните прочими подробностями, сведенями и информацией по данной проблеме.
+    validations:
+      required: false

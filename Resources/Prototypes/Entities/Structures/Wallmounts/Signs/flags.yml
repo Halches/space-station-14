@@ -1,13 +1,12 @@
 - type: entity
-  parent: BaseSign
-  id: BaseFlag
   abstract: true
+  parent: BaseSignWeak
+  id: BaseFlag
   components:
-  - type: WallMount
-    arc: 360
   - type: Sprite
-    drawdepth: WallMountedItems
     sprite: Structures/Wallmounts/flags.rsi
+  - type: Damageable
+    damageModifierSet: ThreadMod
 
 - type: entity
   parent: BaseFlag
@@ -28,14 +27,14 @@
     state: NT_flag
 
 - type: entity
-  parent: BaseFlag
+  parent: [BaseCorvaxContraband131, BaseFlag] # Corvax-Contraband
   id: SyndieFlag
   name: syndicate flag
   description: Smells bloody. Death to NT!
   components:
   - type: Sprite
     state: syndie_flag
-    
+
 - type: entity
   parent: BaseFlag
   id: LGBTQFlag
@@ -44,7 +43,7 @@
   components:
   - type: Sprite
     state: lgbtq_flag
-    
+
 - type: entity
   parent: BaseFlag
   id: PirateFlag

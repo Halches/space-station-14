@@ -2,7 +2,29 @@
   id: Sneeze
   name: chat-emote-name-sneeze
   category: Vocal
+  whitelist:
+    components:
+    - Vocal
+  blacklist:
+    tags:
+    - SiliconEmotes
   chatMessages: ["chat-emote-msg-sneeze"]
+  chatTriggers:
+  - sneeze
+  - sneezes
+  - sneezed
+  - sneeze.
+  - sneezes.
+  - sneezed.
+  - sneeze!
+  - sneezes!
+  - sneezed!
+  # Corvax-Localization-Start
+  - чихнул
+  - чихнул!
+  - чихает
+  - чихает!
+  # Corvax-Localization-End
 
 - type: emote
   id: Cough
@@ -13,13 +35,20 @@
     components:
     - Vocal
   blacklist:
-    components:
-    - BorgChassis
+    tags:
+    - SiliconEmotes
+    - Ipc # Corvax-Species
   chatMessages: ["chat-emote-msg-cough"]
   chatTriggers:
     - cough
     - coughs
     - coughed
+    - cough.
+    - coughs.
+    - coughed.
+    - cough!
+    - coughs!
+    - coughed!
     # Corvax-Localization-Start
     - кашель
     - кашляет
@@ -59,8 +88,9 @@
     components:
     - Vocal
   blacklist:
-    components:
-    - BorgChassis
+    tags:
+    - SiliconEmotes
+    - Ipc # Corvax-Species
   chatMessages: ["chat-emote-msg-yawn"]
   chatTriggers:
     - yawn

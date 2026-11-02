@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -13,14 +13,14 @@ using Robust.Shared.Configuration;
 namespace Content.Server.Corvax.TTS;
 
 // ReSharper disable once InconsistentNaming
-public sealed class TTSManager
+public sealed partial class TTSManager
 {
     private static readonly Histogram RequestTimings = Metrics.CreateHistogram(
         "tts_req_timings",
         "Timings of TTS API requests",
         new HistogramConfiguration()
         {
-            LabelNames = new[] {"type"},
+            LabelNames = new[] { "type" },
             Buckets = Histogram.ExponentialBuckets(.1, 1.5, 10),
         });
 
@@ -32,7 +32,7 @@ public sealed class TTSManager
         "tts_reused_count",
         "Amount of reused TTS audio from cache.");
 
-    [Dependency] private readonly IConfigurationManager _cfg = default!;
+    [Dependency] private IConfigurationManager _cfg = default!;
 
     private readonly HttpClient _httpClient = new();
 
@@ -100,7 +100,21 @@ public sealed class TTSManager
             }
 
             var json = await response.Content.ReadFromJsonAsync<GenerateVoiceResponse>(cancellationToken: cts.Token);
-            var soundData = Convert.FromBase64String(json.Results.First().Audio);
+            if (json.Results.Count == 0)
+            {
+                var rawJson = await response.Content.ReadAsStringAsync(cancellationToken: cts.Token);
+                _sawmill.Error($"TTS API returned empty results for '{text}'. Response: {rawJson}");
+                return null;
+            }
+
+            var firstResult = json.Results[0];
+            if (string.IsNullOrEmpty(firstResult.Audio))
+            {
+                _sawmill.Error($"TTS API returned empty audio data for '{text}'");
+                return null;
+            }
+
+            var soundData = Convert.FromBase64String(firstResult.Audio);
 
             _cache.Add(cacheKey, soundData);
             _cacheKeysSeq.Add(cacheKey);
@@ -138,10 +152,11 @@ public sealed class TTSManager
 
     private string GenerateCacheKey(string speaker, string text)
     {
-        var key = $"{speaker}/{text}";
-        byte[] keyData = Encoding.UTF8.GetBytes(key);
-        var sha256 = System.Security.Cryptography.SHA256.Create();
-        var bytes = sha256.ComputeHash(keyData);
+        var rawKey = $"{speaker}/{text.ToLowerInvariant()}";
+        if (rawKey.Length <= 32)
+            return rawKey;
+
+        var bytes = System.Security.Cryptography.MD5.HashData(Encoding.UTF8.GetBytes(rawKey));
         return Convert.ToHexString(bytes);
     }
 

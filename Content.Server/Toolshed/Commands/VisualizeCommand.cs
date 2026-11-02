@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using Content.Server.Administration;
 using Content.Server.EUI;
 using Content.Shared.Administration;
@@ -9,10 +9,10 @@ using Robust.Shared.Toolshed.Errors;
 
 namespace Content.Server.Toolshed.Commands;
 
-[ToolshedCommand, AdminCommand(AdminFlags.Admin)]
-public sealed class VisualizeCommand : ToolshedCommand
+[ToolshedCommand, AdminCommand(AdminFlags.VarEdit)]
+public sealed partial class VisualizeCommand : ToolshedCommand
 {
-    [Dependency] private readonly EuiManager _euiManager = default!;
+    [Dependency] private EuiManager _euiManager = default!;
 
     [CommandImplementation]
     public void VisualizeEntities(

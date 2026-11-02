@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO.Compression;
 using Robust.Packaging;
 using Robust.Packaging.AssetProcessing;
@@ -14,13 +14,13 @@ public static class ClientPackaging
     /// <summary>
     /// Be advised this can be called from server packaging during a HybridACZ build.
     /// </summary>
-    public static async Task PackageClient(bool skipBuild, string configuration, IPackageLogger logger)
+    public static async Task PackageClient(bool skipBuild, bool logBuild, string configuration, IPackageLogger logger)
     {
         logger.Info("Building client...");
 
         if (!skipBuild)
         {
-            await ProcessHelpers.RunCheck(new ProcessStartInfo
+            var startInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
                 ArgumentList =
@@ -34,7 +34,8 @@ public static class ClientPackaging
                     "/p:FullRelease=true",
                     "/m"
                 }
-            });
+            };
+            // Corvax-Secrets-Start
             if (UseSecrets)
             {
                 await ProcessHelpers.RunCheck(new ProcessStartInfo
@@ -53,6 +54,15 @@ public static class ClientPackaging
                     }
                 });
             }
+            // Corvax-Secrets-End
+
+            if (logBuild)
+            {
+                startInfo.ArgumentList.Add($"/bl:{Path.Combine("release", "client.binlog")}");
+                startInfo.ArgumentList.Add("/p:ReportAnalyzer=true");
+            }
+
+            await ProcessHelpers.RunCheck(startInfo);
         }
 
         logger.Info("Packaging client...");
@@ -103,7 +113,11 @@ public static class ClientPackaging
             assemblies, // Corvax-Secrets
             cancel: cancel);
 
-        await WriteClientResources(contentDir, inputPass, cancel); // Corvax-Secrets: Support content resource ignore to ignore server-only prototypes
+        await WriteClientResources(
+            contentDir,
+            inputPass,
+            SharedPackaging.AdditionalIgnoredResources,
+            cancel);
 
         inputPass.InjectFinished();
     }
@@ -117,11 +131,12 @@ public static class ClientPackaging
     private static async Task WriteClientResources(
         string contentDir,
         AssetPass pass,
+        IReadOnlySet<string> additionalIgnoredResources,
         CancellationToken cancel = default)
     {
         var ignoreSet = RobustClientPackaging.ClientIgnoredResources
             .Union(RobustSharedPackaging.SharedIgnoredResources)
-            .Union(ContentClientIgnoredResources).ToHashSet();
+            .Union(ContentClientIgnoredResources).Union(additionalIgnoredResources).ToHashSet();
 
         await RobustSharedPackaging.DoResourceCopy(Path.Combine(contentDir, "Resources"), pass, ignoreSet, cancel: cancel);
     }

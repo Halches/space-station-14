@@ -16,7 +16,7 @@
             !type:NanotrasenNameGenerator
             prefixCreator: 'ABK'
         - type: StationEmergencyShuttle
-          emergencyShuttlePath: /Maps/Corvax/Shuttles/emergency_corvaxsilly.yml
+          emergencyShuttlePath: /Maps/Corvax/Shuttles/Emergency/emergency_corvaxsilly.yml
         - type: StationCargoShuttle
           path: /Maps/Corvax/Shuttles/cargo_corvaxsilly.yml
         - type: StationJobs
@@ -66,6 +66,11 @@
             Passenger: [ -1, -1 ]
             # silicon
             Borg: [ 1, 1 ]
+            # corvax senior
+            SeniorEngineer: [ 1, 1 ]
+            SeniorPhysician: [ 1, 1 ]
+            SeniorResearcher: [ 1, 1 ]
+            SeniorOfficer: [ 1, 1 ]
         - type: StationGoal
           goals:
           - Singularity

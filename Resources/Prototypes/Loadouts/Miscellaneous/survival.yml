@@ -18,7 +18,10 @@
     - Human
     - Moth
     - Reptilian
-    - Vulpkanin # Corvax-MRP
+    #Corvax-Species-Start
+    - Vulpkanin
+    - Tajaran
+    #Corvax-Species-End
 
 - type: loadoutEffectGroup
   id: EffectSpeciesVox
@@ -54,7 +57,7 @@
     proto: OxygenBreather
   storage:
     back:
-    - BoxHug
+    - BoxSurvivalHug
 
 - type: loadout
   id: EmergencyNitrogenClown
@@ -63,27 +66,7 @@
     proto: NitrogenBreather
   storage:
     back:
-    - BoxHugNitrogen
-
-# Mime
-- type: loadout
-  id: EmergencyOxygenMime
-  effects:
-  - !type:GroupLoadoutEffect
-    proto: OxygenBreather
-  storage:
-    back:
-    - BoxMime
-
-- type: loadout
-  id: EmergencyNitrogenMime
-  effects:
-  - !type:GroupLoadoutEffect
-    proto: NitrogenBreather
-  storage:
-    back:
-    - BoxMimeNitrogen
-
+    - BoxSurvivalHugNitrogen
 
 # Engineering / Extended
 - type: loadout
@@ -142,7 +125,26 @@
     back:
     - BoxSurvivalSecurityNitrogen
 
-# Syndicate
+# Antagonist
+
+- type: loadout
+  id: EmergencyOxygenExtendedAntag
+  effects:
+  - !type:GroupLoadoutEffect
+    proto: OxygenBreather
+  storage:
+    back:
+    - BoxSurvivalDeluxeExtended
+
+- type: loadout
+  id: EmergencyNitrogenExtendedAntag
+  effects:
+  - !type:GroupLoadoutEffect
+    proto: NitrogenBreather
+  storage:
+    back:
+    - BoxSurvivalDeluxeExtendedNitrogen
+
 - type: loadout
   id: EmergencyOxygenSyndicate
   effects:
@@ -160,6 +162,29 @@
   storage:
     back:
     - BoxSurvivalSyndicateNitrogen
+
+# Military / Double Extended
+- type: loadout
+  id: EmergencyOxygenMilitaryDouble
+  effects:
+  - !type:GroupLoadoutEffect
+    proto: OxygenBreather
+  equipment:
+    pocket1: DoubleEmergencyOxygenTankFilled
+  storage:
+    back:
+    - BoxSurvivalMilitaryDouble
+
+- type: loadout
+  id: EmergencyNitrogenMilitaryDouble
+  effects:
+  - !type:GroupLoadoutEffect
+    proto: NitrogenBreather
+  equipment:
+    pocket1: DoubleEmergencyNitrogenTankFilled
+  storage:
+    back:
+    - BoxSurvivalMilitaryDoubleNitrogen
 
 # Pre-equipped species gear
 

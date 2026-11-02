@@ -25,23 +25,18 @@ using static Robust.Client.UserInterface.Controls.BaseButton;
 namespace Content.Client.UserInterface.Systems.Character;
 
 [UsedImplicitly]
-public sealed class CharacterUIController : UIController, IOnStateEntered<GameplayState>, IOnStateExited<GameplayState>, IOnSystemChanged<CharacterInfoSystem>
+public sealed partial class CharacterUIController : UIController, IOnStateEntered<GameplayState>, IOnStateExited<GameplayState>, IOnSystemChanged<CharacterInfoSystem>
 {
-    [Dependency] private readonly IEntityManager _ent = default!;
-    [Dependency] private readonly ILogManager _logMan = default!;
-    [Dependency] private readonly IPlayerManager _player = default!;
-    [Dependency] private readonly IPrototypeManager _prototypeManager = default!;
+    [Dependency] private IEntityManager _ent = default!;
+    [Dependency] private IPlayerManager _player = default!;
+    [Dependency] private IPrototypeManager _prototypeManager = default!;
 
     [UISystemDependency] private readonly CharacterInfoSystem _characterInfo = default!;
     [UISystemDependency] private readonly SpriteSystem _sprite = default!;
 
-    private ISawmill _sawmill = default!;
-
     public override void Initialize()
     {
         base.Initialize();
-
-        _sawmill = _logMan.GetSawmill("character");
 
         SubscribeNetworkEvent<MindRoleTypeChangedEvent>(OnRoleTypeChanged);
     }
@@ -56,19 +51,20 @@ public sealed class CharacterUIController : UIController, IOnStateEntered<Gamepl
         _window = UIManager.CreateWindow<CharacterWindow>();
         LayoutContainer.SetAnchorPreset(_window, LayoutContainer.LayoutPreset.CenterTop);
 
-
+        _window.OnClose += DeactivateButton;
+        _window.OnOpen += ActivateButton;
 
         CommandBinds.Builder
             .Bind(ContentKeyFunctions.OpenCharacterMenu,
-                 InputCmdHandler.FromDelegate(_ => ToggleWindow()))
-             .Register<CharacterUIController>();
+                InputCmdHandler.FromDelegate(_ => ToggleWindow()))
+            .Register<CharacterUIController>();
     }
 
     public void OnStateExited(GameplayState state)
     {
         if (_window != null)
         {
-            _window.Dispose();
+            _window.Close();
             _window = null;
         }
 
@@ -105,18 +101,27 @@ public sealed class CharacterUIController : UIController, IOnStateEntered<Gamepl
         }
 
         CharacterButton.OnPressed += CharacterButtonPressed;
+    }
 
-        if (_window == null)
+    private void DeactivateButton()
+    {
+        if (CharacterButton == null)
         {
             return;
         }
 
-        _window.OnClose += DeactivateButton;
-        _window.OnOpen += ActivateButton;
+        CharacterButton.Pressed = false;
     }
 
-    private void DeactivateButton() => CharacterButton!.Pressed = false;
-    private void ActivateButton() => CharacterButton!.Pressed = true;
+    private void ActivateButton()
+    {
+        if (CharacterButton == null)
+        {
+            return;
+        }
+
+        CharacterButton.Pressed = true;
+    }
 
     private void CharacterUpdated(CharacterData data)
     {
@@ -125,14 +130,14 @@ public sealed class CharacterUIController : UIController, IOnStateEntered<Gamepl
             return;
         }
 
-        var (entity, job, objectives, briefing, entityName) = data;
+        var (entity, objectives, briefing, jobId, entityName) = data;
 
         _window.SpriteView.SetEntity(entity);
 
         UpdateRoleType();
-
+        var job = _prototypeManager.Index(jobId);
         _window.NameLabel.Text = entityName;
-        _window.SubText.Text = job;
+        _window.SubText.Text = job != null ? Loc.GetString(job.Name) : null;
         _window.Objectives.RemoveAllChildren();
         _window.ObjectivesLabel.Visible = objectives.Any();
 
@@ -150,7 +155,7 @@ public sealed class CharacterUIController : UIController, IOnStateEntered<Gamepl
 
             var objectiveLabel = new RichTextLabel
             {
-                StyleClasses = {StyleNano.StyleClassTooltipActionTitle}
+                StyleClasses = { StyleClass.TooltipTitle }
             };
             objectiveLabel.SetMessage(objectiveText);
 
@@ -211,18 +216,11 @@ public sealed class CharacterUIController : UIController, IOnStateEntered<Gamepl
         if (!_ent.TryGetComponent<MindComponent>(container.Mind.Value, out var mind))
             return;
 
-        var roleText = Loc.GetString("role-type-crew-aligned-name");
-        var color = Color.White;
-        if (_prototypeManager.TryIndex(mind.RoleType, out var proto))
-        {
-            roleText = Loc.GetString(proto.Name);
-            color = proto.Color;
-        }
-        else
-            _sawmill.Error($"{_player.LocalEntity} has invalid Role Type '{mind.RoleType}'. Displaying '{roleText}' instead");
+        if (!_prototypeManager.TryIndex(mind.RoleType, out var proto))
+            Log.Error($"Player '{_player.LocalSession}' has invalid Role Type '{mind.RoleType}'. Displaying default instead");
 
-        _window.RoleType.Text = roleText;
-        _window.RoleType.FontColorOverride = color;
+        _window.RoleType.Text = Loc.GetString(proto?.Name ?? "role-type-crew-aligned-name");
+        _window.RoleType.FontColorOverride = proto?.Color ?? Color.White;
     }
 
     private void CharacterDetached(EntityUid uid)
@@ -245,10 +243,7 @@ public sealed class CharacterUIController : UIController, IOnStateEntered<Gamepl
         if (_window == null)
             return;
 
-        if (CharacterButton != null)
-        {
-            CharacterButton.SetClickPressed(!_window.IsOpen);
-        }
+        CharacterButton?.SetClickPressed(!_window.IsOpen);
 
         if (_window.IsOpen)
         {

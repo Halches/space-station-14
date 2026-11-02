@@ -14,7 +14,7 @@
             !type:NanotrasenNameGenerator
             prefixCreator: 'TBK'
         - type: StationEmergencyShuttle
-          emergencyShuttlePath: /Maps/Corvax/Shuttles/emergency_awesome.yml 
+          emergencyShuttlePath: /Maps/Corvax/Shuttles/Emergency/emergency_corvaxawesome.yml 
         - type: StationJobs
           availableJobs:
             # command
@@ -63,3 +63,8 @@
             # silicon
             StationAi: [ 1, 1 ]
             Borg: [ 2, 2 ]
+            # corvax senior
+            SeniorEngineer: [ 1, 1 ]
+            SeniorPhysician: [ 1, 1 ]
+            SeniorResearcher: [ 1, 1 ]
+            SeniorOfficer: [ 1, 1 ]

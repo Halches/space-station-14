@@ -16,16 +16,17 @@
     - BaseStationJobsSpawning
     - BaseStationRecords
     - BaseStationArrivals
-    - BaseStationGateway
     - BaseStationShuttles
     - BaseStationCentcomm
     - BaseStationEvacuation
     - BaseStationAlertLevels
     - BaseStationMagnet
     - BaseStationExpeditions
+    - BaseStationSalvageJobs
     - BaseStationSiliconLawNTDefault # Corvax-NTDefault
     - BaseStationAllEventsEligible
     - BaseStationNanotrasen
+    - BaseStationDeliveries
   categories: [ HideSpawnMenu ]
   components:
     - type: Transform

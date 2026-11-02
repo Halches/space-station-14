@@ -61,8 +61,12 @@
             Musician: [ 1, 1 ]
             Reporter: [ 1, 1 ]
             ServiceWorker: [ 3, 3 ]
-            Zookeeper: [ 1, 1 ]
             Passenger: [ -1, -1 ]
             #silicon
             StationAi: [ 1, 1 ]
             Borg: [ 3, 3 ]
+            # corvax senior
+            SeniorEngineer: [ 1, 1 ]
+            SeniorPhysician: [ 1, 1 ]
+            SeniorResearcher: [ 1, 1 ]
+            SeniorOfficer: [ 1, 1 ]

@@ -1,12 +1,9 @@
-using System.Linq;
 using Content.Server.Fax;
-using Content.Server.GameTicking.Events;
-using Content.Server.Station.Components;
-using Content.Server.Station.Systems;
+using Content.Server.MassMedia.Systems;
+using Content.Shared.Station.Systems;
 using Content.Shared.Corvax.CCCVars;
 using Content.Shared.Fax.Components;
 using Content.Shared.GameTicking;
-using Content.Shared.Paper;
 using Robust.Server.Player;
 using Robust.Shared.Configuration;
 using Robust.Shared.Prototypes;
@@ -17,23 +14,22 @@ namespace Content.Server.Corvax.StationGoal
     /// <summary>
     ///     System to spawn paper with station goal.
     /// </summary>
-    public sealed class StationGoalPaperSystem : EntitySystem
+    public sealed partial class StationGoalPaperSystem : EntitySystem
     {
-        [Dependency] private readonly IPrototypeManager _proto = default!;
-        [Dependency] private readonly IRobustRandom _random = default!;
-        [Dependency] private readonly FaxSystem _fax = default!;
-        [Dependency] private readonly IPlayerManager _playerManager = default!;
-        [Dependency] private readonly StationSystem _station = default!;
-        [Dependency] private readonly IConfigurationManager _cfg = default!;
-
+        [Dependency] private IPrototypeManager _proto = default!;
+        [Dependency] private IRobustRandom _random = default!;
+        [Dependency] private FaxSystem _fax = default!;
+        [Dependency] private NewsSystem _news = default!;
+        [Dependency] private IPlayerManager _playerManager = default!;
+        [Dependency] private StationSystem _station = default!;
+        [Dependency] private IConfigurationManager _cfg = default!;
 
         public override void Initialize()
         {
-            base.Initialize();
-            SubscribeLocalEvent<RoundStartingEvent>(OnRoundStarting);
+            SubscribeLocalEvent<RoundStartedEvent>(OnRoundStarted);
         }
 
-        private void OnRoundStarting(RoundStartingEvent ev)
+        private void OnRoundStarted(RoundStartedEvent ev)
         {
             if (!_cfg.GetCVar(CCCVars.StationGoal))
                 return;
@@ -71,7 +67,7 @@ namespace Content.Server.Corvax.StationGoal
             }
         }
 
-        public bool SendStationGoal(EntityUid? ent, ProtoId<StationGoalPrototype> goal)
+        public bool SendStationGoal(EntityUid ent, ProtoId<StationGoalPrototype> goal)
         {
             return SendStationGoal(ent, _proto.Index(goal));
         }
@@ -80,45 +76,60 @@ namespace Content.Server.Corvax.StationGoal
         ///     Send a station goal on selected station to all faxes which are authorized to receive it.
         /// </summary>
         /// <returns>True if at least one fax received paper</returns>
-        public bool SendStationGoal(EntityUid? ent, StationGoalPrototype goal)
+        public bool SendStationGoal(EntityUid ent, StationGoalPrototype goal)
         {
-            if (ent is null)
-                return false;
-
-            if (!TryComp<StationDataComponent>(ent, out var stationData))
-                return false;
-
             var printout = new FaxPrintout(
-                Loc.GetString(goal.Text, ("station", MetaData(ent.Value).EntityName)),
+                Loc.GetString(goal.Text, ("station", MetaData(ent).EntityName)),
                 Loc.GetString("station-goal-fax-paper-name"),
                 null,
                 null,
                 "paper_stamp-centcom",
-                new List<StampDisplayInfo>
-                {
-                    new() { StampedName = Loc.GetString("stamp-component-stamped-name-centcom"), StampedColor = Color.FromHex("#006600") },
-                });
+                [new() { StampedName = Loc.GetString("stamp-component-stamped-name-centcom"), StampedColor = Color.FromHex("#006600") }]
+            );
 
             var wasSent = false;
             var query = EntityQueryEnumerator<FaxMachineComponent>();
             while (query.MoveNext(out var faxUid, out var fax))
             {
-                if (!fax.ReceiveStationGoal)
+                if (!fax.ReceiveAllStationGoals && !(fax.ReceiveStationGoal && _station.GetOwningStation(faxUid) == ent))
                     continue;
 
-                var largestGrid = _station.GetLargestGrid(stationData);
-                var grid = Transform(faxUid).GridUid;
-                if (grid is not null && largestGrid == grid.Value)
-                {
-                    _fax.Receive(faxUid, printout, null, fax);
-                    foreach (var spawnEnt in goal.Spawns)
-                    {
-                        SpawnAtPosition(spawnEnt, Transform(faxUid).Coordinates);
-                    }
-                    wasSent = true;
-                }
+                _fax.Receive(faxUid, printout, null, fax);
+
+                foreach (var spawnEnt in goal.Spawns)
+                    SpawnAtPosition(spawnEnt, Transform(faxUid).Coordinates);
+
+                wasSent |= fax.ReceiveStationGoal;
             }
+
+            // Publish news if at least one fax received the goal.
+            if (wasSent)
+            {
+                PublishStationGoalNews(ent, goal);
+            }
+
             return wasSent;
+        }
+
+        /// <summary>
+        ///     Publishes a news article about the station goal in the mass media.
+        /// </summary>
+        private void PublishStationGoalNews(EntityUid ent, StationGoalPrototype goal)
+        {
+            var stationName = MetaData(ent).EntityName;
+
+            var title = Loc.GetString("station-goal-news-title", ("station", stationName));
+
+            var content = Loc.GetString(goal.Text, ("station", stationName));
+            var endPattern = Loc.GetString("station-goal-end");
+
+            if (content.EndsWith(endPattern))
+            {
+                content = content[..^endPattern.Length];
+                content = content.TrimEnd();
+            }
+
+            _news.TryAddNews(ent, title, content, out _, Loc.GetString("station-goal-news-author"));
         }
     }
 }

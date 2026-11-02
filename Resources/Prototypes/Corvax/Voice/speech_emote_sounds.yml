@@ -1,19 +1,18 @@
 # species
 - type: emoteSounds
-  id: MaleVulpkanin
+  id: MaleTajaran
+  voiceSelectorName: humanoid-profile-editor-voice-masculine
   params:
     variation: 0.125
   sounds:
     Scream:
-      collection: MaleScreams
+      path: /Audio/Corvax/Effects/Tajaran/scream.ogg
     Laugh:
-      collection: MaleLaugh
-    Growl:
-      collection: Growl
-    Howl:
-      path: /Audio/Corvax/Effects/howl.ogg
+      path: /Audio/Corvax/Effects/Tajaran/laugh.ogg
     Sneeze:
-      collection: MaleSneezes
+      path: /Audio/Corvax/Effects/Tajaran/sneeze.ogg
+    Purr:
+      path: /Audio/Corvax/Effects/Tajaran/purr.ogg
     Cough:
       collection: MaleCoughs
     Yawn:
@@ -21,33 +20,32 @@
     Snore:
       collection: Snores
     Sigh:
-      collection: MaleSigh
+      path: /Audio/Corvax/Effects/Tajaran/sigh.ogg
     Crying:
-      collection: MaleCry
+      path: /Audio/Corvax/Effects/Tajaran/cry.ogg
     Whistle:
       collection: Whistles
     Weh:
       collection: Weh
     Gasp:
-      collection: MaleGasp
+      path: /Audio/Corvax/Effects/Tajaran/gasp.ogg
     DefaultDeathgasp:
       collection: MaleDeathGasp
 
 - type: emoteSounds
-  id: FemaleVulpkanin
+  id: FemaleTajaran
+  voiceSelectorName: humanoid-profile-editor-voice-feminine
   params:
     variation: 0.125
   sounds:
     Scream:
-      collection: FemaleScreams
+      path: /Audio/Corvax/Effects/Tajaran/scream.ogg
     Laugh:
-      collection: FemaleLaugh
-    Growl:
-      collection: Growl
-    Howl:
-      path: /Audio/Corvax/Effects/howl.ogg
+      path: /Audio/Corvax/Effects/Tajaran/laugh.ogg
     Sneeze:
-      collection: FemaleSneezes
+      path: /Audio/Corvax/Effects/Tajaran/sneeze.ogg
+    Purr:
+      path: /Audio/Corvax/Effects/Tajaran/purr.ogg
     Cough:
       collection: FemaleCoughs
     Yawn:
@@ -55,14 +53,58 @@
     Snore:
       collection: Snores
     Sigh:
-      collection: FemaleSigh
+      path: /Audio/Corvax/Effects/Tajaran/sigh.ogg
     Crying:
-      collection: FemaleCry
+      path: /Audio/Corvax/Effects/Tajaran/cry.ogg
     Whistle:
       collection: Whistles
     Weh:
       collection: Weh
     Gasp:
-      collection: FemaleGasp
+      path: /Audio/Corvax/Effects/Tajaran/gasp.ogg
     DefaultDeathgasp:
       collection: FemaleDeathGasp
+
+# species
+- type: emoteSounds
+  id: UnisexIpc
+  voiceSelectorName: humanoid-profile-editor-voice-neutral
+  params:
+    variation: 0.125
+  sounds:
+    Scream:
+      path: /Audio/Corvax/Effects/Ipc/scream.ogg
+    Laugh:
+      path: /Audio/Corvax/Effects/Ipc/laugh.ogg
+    Snore:
+      path: /Audio/Machines/buzz-two.ogg
+    Crying:
+      path: /Audio/Corvax/Effects/Ipc/cry.ogg
+    Weh:
+      collection: Weh
+
+- type: emoteSounds
+  id: IpcEmotes
+  sounds:
+    BeepIpc:
+      path: /Audio/Machines/twobeep.ogg
+    ChimeIpc:
+      path: /Audio/Machines/chime.ogg
+    BuzzIpc:
+      path: /Audio/Machines/buzz-sigh.ogg
+    Buzz-TwoIpc:
+      path: /Audio/Machines/buzz-two.ogg
+    HonkIpc:
+      path: /Audio/Items/bikehorn.ogg
+    PingIpc:
+      path: /Audio/Effects/Cargo/ping.ogg
+    Clap:
+      collection: Claps
+    ClapSingle:
+      collection: ClapSingle
+    Snap:
+      collection: Snaps
+      params:
+        volume: -6
+    Salute:
+      collection: Salutes

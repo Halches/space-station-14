@@ -1,9 +1,11 @@
 using System.Linq;
 using Content.Corvax.Interfaces.Shared;
+using Content.Shared.Construction.Prototypes;
 using Content.Shared.Preferences;
 using Robust.Client;
 using Robust.Client.Player;
 using Robust.Shared.Network;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
 
 namespace Content.Client.Lobby
@@ -13,11 +15,11 @@ namespace Content.Client.Lobby
     ///     connection.
     ///     Stores preferences on the server through <see cref="SelectCharacter" /> and <see cref="UpdateCharacter" />.
     /// </summary>
-    public partial class ClientPreferencesManager : IClientPreferencesManager
+    public sealed partial class ClientPreferencesManager : IClientPreferencesManager
     {
-        [Dependency] private readonly IClientNetManager _netManager = default!;
-        [Dependency] private readonly IBaseClient _baseClient = default!;
-        [Dependency] private readonly IPlayerManager _playerManager = default!;
+        [Dependency] private IClientNetManager _netManager = default!;
+        [Dependency] private IBaseClient _baseClient = default!;
+        [Dependency] private IPlayerManager _playerManager = default!;
         private ISharedSponsorsManager? _sponsorsManager; // Corvax-Sponsors
 
         public event Action? OnServerDataLoaded;
@@ -45,14 +47,14 @@ namespace Content.Client.Lobby
             }
         }
 
-        public void SelectCharacter(ICharacterProfile profile)
+        public void SelectCharacter(HumanoidCharacterProfile profile)
         {
             SelectCharacter(Preferences.IndexOfCharacter(profile));
         }
 
         public void SelectCharacter(int slot)
         {
-            Preferences = new PlayerPreferences(Preferences.Characters, slot, Preferences.AdminOOCColor);
+            Preferences = new PlayerPreferences(Preferences.Characters, slot, Preferences.AdminOOCColor, Preferences.ConstructionFavorites);
             var msg = new MsgSelectCharacter
             {
                 SelectedCharacterIndex = slot
@@ -60,15 +62,15 @@ namespace Content.Client.Lobby
             _netManager.ClientSendMessage(msg);
         }
 
-        public void UpdateCharacter(ICharacterProfile profile, int slot)
+        public void UpdateCharacter(HumanoidCharacterProfile profile, int slot)
         {
             var collection = IoCManager.Instance!;
             // Corvax-Sponsors-Start
             var sponsorPrototypes = _sponsorsManager?.GetClientPrototypes().ToArray() ?? [];
             profile.EnsureValid(_playerManager.LocalSession!, collection, sponsorPrototypes);
             // Corvax-Sponsors-End
-            var characters = new Dictionary<int, ICharacterProfile>(Preferences.Characters) {[slot] = profile};
-            Preferences = new PlayerPreferences(characters, Preferences.SelectedCharacterIndex, Preferences.AdminOOCColor);
+            var characters = new Dictionary<int, HumanoidCharacterProfile>(Preferences.Characters) {[slot] = profile};
+            Preferences = new PlayerPreferences(characters, Preferences.SelectedCharacterIndex, Preferences.AdminOOCColor, Preferences.ConstructionFavorites);
             var msg = new MsgUpdateCharacter
             {
                 Profile = profile,
@@ -77,9 +79,9 @@ namespace Content.Client.Lobby
             _netManager.ClientSendMessage(msg);
         }
 
-        public void CreateCharacter(ICharacterProfile profile)
+        public void CreateCharacter(HumanoidCharacterProfile profile)
         {
-            var characters = new Dictionary<int, ICharacterProfile>(Preferences.Characters);
+            var characters = new Dictionary<int, HumanoidCharacterProfile>(Preferences.Characters);
             var lowest = Enumerable.Range(0, Settings.MaxCharacterSlots)
                 .Except(characters.Keys)
                 .FirstOrNull();
@@ -91,12 +93,12 @@ namespace Content.Client.Lobby
 
             var l = lowest.Value;
             characters.Add(l, profile);
-            Preferences = new PlayerPreferences(characters, Preferences.SelectedCharacterIndex, Preferences.AdminOOCColor);
+            Preferences = new PlayerPreferences(characters, Preferences.SelectedCharacterIndex, Preferences.AdminOOCColor, Preferences.ConstructionFavorites);
 
             UpdateCharacter(profile, l);
         }
 
-        public void DeleteCharacter(ICharacterProfile profile)
+        public void DeleteCharacter(HumanoidCharacterProfile profile)
         {
             DeleteCharacter(Preferences.IndexOfCharacter(profile));
         }
@@ -104,10 +106,20 @@ namespace Content.Client.Lobby
         public void DeleteCharacter(int slot)
         {
             var characters = Preferences.Characters.Where(p => p.Key != slot);
-            Preferences = new PlayerPreferences(characters, Preferences.SelectedCharacterIndex, Preferences.AdminOOCColor);
+            Preferences = new PlayerPreferences(characters, Preferences.SelectedCharacterIndex, Preferences.AdminOOCColor, Preferences.ConstructionFavorites);
             var msg = new MsgDeleteCharacter
             {
                 Slot = slot
+            };
+            _netManager.ClientSendMessage(msg);
+        }
+
+        public void UpdateConstructionFavorites(List<ProtoId<ConstructionPrototype>> favorites)
+        {
+            Preferences = new PlayerPreferences(Preferences.Characters, Preferences.SelectedCharacterIndex, Preferences.AdminOOCColor, favorites);
+            var msg = new MsgUpdateConstructionFavorites
+            {
+                Favorites = favorites
             };
             _netManager.ClientSendMessage(msg);
         }

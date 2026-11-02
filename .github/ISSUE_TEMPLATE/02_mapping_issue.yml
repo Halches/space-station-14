@@ -1,0 +1,47 @@
+name: Сообщить о проблеме в маппинге
+description: Шаблон для проблем с картами.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо, что уделяете время написанию баг-репорта. Этот шаблон предназначен для проблем, связанных с маппингом.
+        Для обратной связи и помощи в работе с Space Station 14, присоединяйтесь к нашему серверу в [Discord](https://discord.station14.ru).
+  - type: input
+    attributes:
+      label: В какой версии игры происходит ошибка?
+      description: Вы можете узнать версию, нажав на кнопку "Обновления" в игре и посмотрев версию в правом нижнем углу окна обновлений.
+      placeholder: syndicate/aa1337b
+    validations:
+      required: false
+  - type: input
+    attributes:
+      label: На какой станции, шаттле или гриде возникла проблема?
+      description: Название станции, шаттла или грида. Если не знаете название, попробуйте описать.
+      placeholder: Bagel
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Описание
+      description: |
+        Краткое и ясное описание этой проблемы.
+        Если проблему будет видно на скриншоте, прикрепите скриншот.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Шаги воспроизведения
+      description: Опишите, что нужно сделать для воспроизведения проблемы.
+      placeholder: |
+        1.
+        2.
+        3.
+        ...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Дополнительный контекст
+      description: Дополните прочими подробностями, сведенями и информацией по данной проблеме.
+    validations:
+      required: false

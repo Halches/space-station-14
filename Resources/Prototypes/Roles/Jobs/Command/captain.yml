@@ -1,4 +1,4 @@
-﻿- type: job
+- type: job
   id: Captain
   name: job-name-captain
   description: job-description-captain
@@ -6,24 +6,30 @@
   requirements:
     - !type:DepartmentTimeRequirement
       department: Engineering
-      time: 72000 #20 hrs # Corvax-RoleTime
+      time: 20h # Corvax-RoleTime 4
     - !type:DepartmentTimeRequirement
       department: Medical
-      time: 72000 #20 hrs # Corvax-RoleTime
+      time: 20h # Corvax-RoleTime 4
+    - !type:DepartmentTimeRequirement
+      department: Science
+      time: 4h
     - !type:DepartmentTimeRequirement
       department: Security
-      time: 72000 #20 hrs # Corvax-RoleTime
+      time: 20h # Corvax-RoleTime 4
 #    - !type:DepartmentTimeRequirement
 #      department: Command
-#      time: 54000 # 15 hours
+#      time: 4h
     - !type:OverallPlaytimeRequirement
-      time: 504000 #140 hrs # Corvax-RoleTime
-  weight: 20
+      time: 140h # Corvax-RoleTime 4
+    - !type:TraitsRequirement #Corvax-TraitsRequirement
+      inverted: true
+      traits:
+      - Muted
   startingGear: CaptainGear
   icon: "JobIconCaptain"
   joinNotifyCrew: true
   supervisors: job-supervisors-centcom
-  canBeAntag: false
+  guides: [ Command ] # TODO: should have a more specific guidebook page instead of using the department itself
   accessGroups:
   - AllAccess
   special:
@@ -37,7 +43,7 @@
   id: CaptainGear
   equipment:
     shoes: ClothingShoesBootsLaceup
-    eyes: ClothingEyesGlassesSunglasses
+    eyes: ClothingEyesGlassesCommand
     gloves: ClothingHandsGlovesCaptain
     id: CaptainPDA
     ears: ClothingHeadsetAltCommand
@@ -45,3 +51,13 @@
     back:
     - Flash
     # - StationCharter
+
+- type: chameleonOutfit
+  id: CaptainChameleonOutfit
+  job: Captain
+  hasMindShield: true
+  equipment:
+    head: ClothingHeadHatCapcap
+    eyes: ClothingEyesGlassesCommand
+    mask: ClothingMaskGasCaptain
+    neck: ClothingNeckCloakCap

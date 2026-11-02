@@ -19,12 +19,14 @@ using Content.Shared.Players.RateLimiting;
 using JetBrains.Annotations;
 using Robust.Server.Player;
 using Robust.Shared;
+using Robust.Shared.Asynchronous;
 using Robust.Shared.Configuration;
 using Robust.Shared.Enums;
 using Robust.Shared.Network;
 using Robust.Shared.Player;
 using Robust.Shared.Timing;
 using Robust.Shared.Utility;
+using Content.Server.Corvax.Administration; // Corvax-Administration
 
 namespace Content.Server.Administration.Systems
 {
@@ -33,16 +35,17 @@ namespace Content.Server.Administration.Systems
     {
         private const string RateLimitKey = "AdminHelp";
 
-        [Dependency] private readonly IPlayerManager _playerManager = default!;
-        [Dependency] private readonly IAdminManager _adminManager = default!;
-        [Dependency] private readonly IConfigurationManager _config = default!;
-        [Dependency] private readonly IGameTiming _timing = default!;
-        [Dependency] private readonly IPlayerLocator _playerLocator = default!;
-        [Dependency] private readonly GameTicker _gameTicker = default!;
-        [Dependency] private readonly SharedMindSystem _minds = default!;
-        [Dependency] private readonly IAfkManager _afkManager = default!;
-        [Dependency] private readonly IServerDbManager _dbManager = default!;
-        [Dependency] private readonly PlayerRateLimitManager _rateLimit = default!;
+        [Dependency] private IPlayerManager _playerManager = default!;
+        [Dependency] private IAdminManager _adminManager = default!;
+        [Dependency] private IConfigurationManager _config = default!;
+        [Dependency] private IGameTiming _timing = default!;
+        [Dependency] private IPlayerLocator _playerLocator = default!;
+        [Dependency] private ServerGameTicker _gameTicker = default!;
+        [Dependency] private SharedMindSystem _minds = default!;
+        [Dependency] private IAfkManager _afkManager = default!;
+        [Dependency] private IServerDbManager _dbManager = default!;
+        [Dependency] private PlayerRateLimitManager _rateLimit = default!;
+        [Dependency] private ITaskManager _taskManager = default!;
 
         [GeneratedRegex(@"^https://discord\.com/api/webhooks/(\d+)/((?!.*/).*)$")]
         private static partial Regex DiscordRegex();
@@ -93,7 +96,8 @@ namespace Content.Server.Administration.Systems
             Subs.CVar(_config, CCVars.DiscordAHelpAvatar, OnAvatarChanged, true);
             Subs.CVar(_config, CVars.GameHostName, OnServerNameChanged, true);
             Subs.CVar(_config, CCVars.AdminAhelpOverrideClientName, OnOverrideChanged, true);
-            _sawmill = IoCManager.Resolve<ILogManager>().GetSawmill("AHELP");
+            Subs.CVar(_config, CCVars.AhelpQuickInfoStartWordSize, v => _startWordMinSize = v, true);
+            _sawmill = LogManager.GetSawmill("AHELP");
 
             var defaultParams = new AHelpMessageParams(
                 string.Empty,
@@ -172,7 +176,7 @@ namespace Content.Server.Administration.Systems
                 }
 
                 // Check if the user has been banned
-                var ban = await _dbManager.GetServerBanAsync(null, e.Session.UserId, null, null);
+                var ban = await _dbManager.GetBanAsync(null, e.Session.UserId, null, null);
                 if (ban != null)
                 {
                     var banMessage = Loc.GetString("bwoink-system-player-banned", ("banReason", ban.Reason));
@@ -525,6 +529,8 @@ namespace Content.Server.Administration.Systems
             }
 
             _relayMessages[userId] = existingEmbed;
+            _taskManager.RunOnMainThread(() =>
+                RaiseLocalEvent(new CorvaxAHelpRelayChangedEvent(userId))); // Corvax-API
 
             // Actually do the on call relay last, we just need to grab it before we dequeue every message above.
             if (onCallRelay &&
@@ -582,7 +588,7 @@ namespace Content.Server.Administration.Systems
             {
                 GameRunLevel.PreRoundLobby => _gameTicker.RoundId == 0
                     ? "pre-round lobby after server restart" // first round after server restart has ID == 0
-                    : $"pre-round lobby for round {_gameTicker.RoundId + 1}",
+                    : $"pre-round lobby for round {_gameTicker.RoundId}",
                 GameRunLevel.InRound => $"round {_gameTicker.RoundId}",
                 GameRunLevel.PostRound => $"post-round {_gameTicker.RoundId}",
                 _ => throw new ArgumentOutOfRangeException(nameof(_gameTicker.RunLevel),
@@ -629,7 +635,77 @@ namespace Content.Server.Administration.Systems
             }
         }
 
-        protected override void OnBwoinkTextMessage(BwoinkTextMessage message, EntitySessionEventArgs eventArgs)
+        private string FormatName(AdminData? senderAdmin, ICommonSession senderSession, string prefix, string name)
+        {
+            if (senderAdmin is not null &&
+                senderAdmin.Flags ==
+                AdminFlags.Adminhelp) // Mentor. Not full admin. That's why it's colored differently.
+            {
+                return $"[color=purple]{prefix}{name}[/color]";
+            }
+            else if (senderAdmin is not null && senderAdmin.HasFlag(AdminFlags.Adminhelp))
+            {
+                return $"[color=red]{prefix}{name}[/color]";
+            }
+            else
+            {
+                return $"{senderSession.Name}"; // Not an admin, name is not overridden.
+            }
+        }
+
+        private async Task<BwoinkTextMessage> FormatFullMessageForRecipient(
+            bool forAdmin,
+            AdminData? senderAdmin,
+            ICommonSession senderSession,
+            BwoinkTextMessage input)
+        {
+            var senderAHelpAdmin = senderAdmin?.HasFlag(AdminFlags.Adminhelp) ?? false;
+            string messageText;
+
+            if (forAdmin)
+            {
+                messageText = await GenerateNameLinks(input.Text);
+            }
+            else
+            {
+                messageText = FormattedMessage.EscapeText(input.Text);
+            }
+
+            var adminPrefix = "";
+            if (_config.GetCVar(CCVars.AhelpAdminPrefix) && senderAdmin?.Title != null)
+                adminPrefix = $"[bold]\\[{FormattedMessage.EscapeText(senderAdmin.Title)}\\][/bold] ";
+
+            var bwoinkText = FormatName(
+                senderAdmin,
+                senderSession,
+                adminPrefix,
+                forAdmin || _overrideClientName == string.Empty ? senderSession.Name : _overrideClientName);
+
+            var statusPrefix = "";
+            if (input.AdminOnly)
+                statusPrefix = Loc.GetString("bwoink-message-admin-only");
+            else if (!input.PlaySound)
+                statusPrefix = Loc.GetString("bwoink-message-silent");
+
+            bwoinkText = $"{statusPrefix} {bwoinkText}: {messageText}";
+
+            // Corvax-Start-Administration
+            var transformEv = new TransformBwoinkTextEvent(bwoinkText, senderSession);
+            RaiseLocalEvent(ref transformEv);
+            bwoinkText = transformEv.Text;
+            // Corvax-End-Administration
+
+            // If it's not an admin / admin chooses to keep the sound and message is not an admin only message, then play it.
+            var playSound = (!senderAHelpAdmin || input.PlaySound) && !input.AdminOnly;
+            return new BwoinkTextMessage(
+                input.UserId,
+                senderSession.UserId,
+                bwoinkText,
+                playSound: playSound,
+                adminOnly: input.AdminOnly);
+        }
+
+        protected override async void OnBwoinkTextMessage(BwoinkTextMessage message, EntitySessionEventArgs eventArgs)
         {
             base.OnBwoinkTextMessage(message, eventArgs);
             _activeConversations[message.UserId] = DateTime.Now;
@@ -640,7 +716,7 @@ namespace Content.Server.Administration.Systems
             var personalChannel = senderSession.UserId == message.UserId;
             var senderAdmin = _adminManager.GetAdminData(senderSession);
             var senderAHelpAdmin = senderAdmin?.HasFlag(AdminFlags.Adminhelp) ?? false;
-            var authorized = personalChannel || senderAHelpAdmin;
+            var authorized = personalChannel && !message.AdminOnly || senderAHelpAdmin;
             if (!authorized)
             {
                 // Unauthorized bwoink (log?)
@@ -650,98 +726,35 @@ namespace Content.Server.Administration.Systems
             if (_rateLimit.CountAction(eventArgs.SenderSession, RateLimitKey) != RateLimitStatus.Allowed)
                 return;
 
-            var escapedText = FormattedMessage.EscapeText(message.Text);
+            _afkManager.PlayerDidAction(senderSession);
 
-            string bwoinkText;
-            string adminPrefix = "";
-
-            //Getting an administrator position
-            if (_config.GetCVar(CCVars.AhelpAdminPrefix) && senderAdmin is not null && senderAdmin.Title is not null)
-            {
-                adminPrefix = $"[bold]\\[{senderAdmin.Title}\\][/bold] ";
-            }
-
-            if (senderAdmin is not null &&
-                senderAdmin.Flags ==
-                AdminFlags.Adminhelp) // Mentor. Not full admin. That's why it's colored differently.
-            {
-                bwoinkText = $"[color=purple]{adminPrefix}{senderSession.Name}[/color]";
-            }
-            else if (senderAdmin is not null && senderAdmin.HasFlag(AdminFlags.Adminhelp))
-            {
-                bwoinkText = $"[color=red]{adminPrefix}{senderSession.Name}[/color]";
-            }
-            else
-            {
-                bwoinkText = $"{senderSession.Name}";
-            }
-
-            bwoinkText = $"{(message.PlaySound ? "" : "(S) ")}{bwoinkText}: {escapedText}";
-
-            // If it's not an admin / admin chooses to keep the sound then play it.
-            var playSound = !senderAHelpAdmin || message.PlaySound;
-            var msg = new BwoinkTextMessage(message.UserId, senderSession.UserId, bwoinkText, playSound: playSound);
-
-            LogBwoink(msg);
+            // If it's not an admin / admin chooses to keep the sound and message is not an admin only message, then play it.
+            var playSound = (!senderAHelpAdmin || message.PlaySound) && !message.AdminOnly;
 
             var admins = GetTargetAdmins();
+            var adminMsg = await FormatFullMessageForRecipient(forAdmin: true, senderAdmin, senderSession, message);
 
             // Notify all admins
             foreach (var channel in admins)
             {
-                RaiseNetworkEvent(msg, channel);
-            }
-
-            string adminPrefixWebhook = "";
-
-            if (_config.GetCVar(CCVars.AhelpAdminPrefixWebhook) && senderAdmin is not null && senderAdmin.Title is not null)
-            {
-                adminPrefixWebhook = $"[bold]\\[{senderAdmin.Title}\\][/bold] ";
+                RaiseNetworkEvent(adminMsg, channel);
             }
 
             // Notify player
-            if (_playerManager.TryGetSessionById(message.UserId, out var session))
+            if (_playerManager.TryGetSessionById(message.UserId, out var session) && !message.AdminOnly)
             {
                 if (!admins.Contains(session.Channel))
                 {
-                    // If _overrideClientName is set, we generate a new message with the override name. The admins name will still be the original name for the webhooks.
-                    if (_overrideClientName != string.Empty)
-                    {
-                        string overrideMsgText;
-                        // Doing the same thing as above, but with the override name. Theres probably a better way to do this.
-                        if (senderAdmin is not null &&
-                            senderAdmin.Flags ==
-                            AdminFlags.Adminhelp) // Mentor. Not full admin. That's why it's colored differently.
-                        {
-                            overrideMsgText = $"[color=purple]{adminPrefixWebhook}{_overrideClientName}[/color]";
-                        }
-                        else if (senderAdmin is not null && senderAdmin.HasFlag(AdminFlags.Adminhelp))
-                        {
-                            overrideMsgText = $"[color=red]{adminPrefixWebhook}{_overrideClientName}[/color]";
-                        }
-                        else
-                        {
-                            overrideMsgText = $"{senderSession.Name}"; // Not an admin, name is not overridden.
-                        }
-
-                        overrideMsgText = $"{(message.PlaySound ? "" : "(S) ")}{overrideMsgText}: {escapedText}";
-
-                        RaiseNetworkEvent(new BwoinkTextMessage(message.UserId,
-                                senderSession.UserId,
-                                overrideMsgText,
-                                playSound: playSound),
-                            session.Channel);
-                    }
-                    else
-                        RaiseNetworkEvent(msg, session.Channel);
+                    var playerMsg = await FormatFullMessageForRecipient(forAdmin: false, senderAdmin, senderSession, message);
+                    RaiseNetworkEvent(playerMsg, session.Channel);
                 }
             }
 
             var sendsWebhook = _webhookUrl != string.Empty;
             if (sendsWebhook)
             {
-                if (!_messageQueues.ContainsKey(msg.UserId))
-                    _messageQueues[msg.UserId] = new Queue<DiscordRelayedData>();
+                if (!_messageQueues.ContainsKey(message.UserId))
+                    _messageQueues[message.UserId] = new Queue<DiscordRelayedData>();
 
                 var str = message.Text;
                 var unameLength = senderSession.Name.Length;
@@ -759,9 +772,10 @@ namespace Content.Server.Administration.Systems
                     _gameTicker.RoundDuration().ToString("hh\\:mm\\:ss"),
                     _gameTicker.RunLevel,
                     playedSound: playSound,
+                    adminOnly: message.AdminOnly,
                     noReceivers: nonAfkAdmins.Count == 0
                 );
-                _messageQueues[msg.UserId].Enqueue(GenerateAHelpMessage(messageParams));
+                _messageQueues[message.UserId].Enqueue(GenerateAHelpMessage(messageParams));
             }
 
             if (admins.Count != 0 || sendsWebhook)
@@ -790,7 +804,7 @@ namespace Content.Server.Administration.Systems
                 .ToList();
         }
 
-        private static DiscordRelayedData GenerateAHelpMessage(AHelpMessageParams parameters)
+        private DiscordRelayedData GenerateAHelpMessage(AHelpMessageParams parameters)
         {
             var stringbuilder = new StringBuilder();
 
@@ -806,7 +820,7 @@ namespace Content.Server.Administration.Systems
             if (parameters.RoundTime != string.Empty && parameters.RoundState == GameRunLevel.InRound)
                 stringbuilder.Append($" **{parameters.RoundTime}**");
             if (!parameters.PlayedSound)
-                stringbuilder.Append(" **(S)**");
+                stringbuilder.Append($" **{(parameters.AdminOnly ? Loc.GetString("bwoink-message-admin-only") : Loc.GetString("bwoink-message-silent"))}**");
             if (parameters.Icon == null)
                 stringbuilder.Append($" **{parameters.Username}:** ");
             else
@@ -869,6 +883,7 @@ namespace Content.Server.Administration.Systems
         public string RoundTime { get; set; }
         public GameRunLevel RoundState { get; set; }
         public bool PlayedSound { get; set; }
+        public readonly bool AdminOnly;
         public bool NoReceivers { get; set; }
         public string? Icon { get; set; }
 
@@ -879,6 +894,7 @@ namespace Content.Server.Administration.Systems
             string roundTime,
             GameRunLevel roundState,
             bool playedSound,
+            bool adminOnly = false,
             bool noReceivers = false,
             string? icon = null)
         {
@@ -888,6 +904,7 @@ namespace Content.Server.Administration.Systems
             RoundTime = roundTime;
             RoundState = roundState;
             PlayedSound = playedSound;
+            AdminOnly = adminOnly;
             NoReceivers = noReceivers;
             Icon = icon;
         }

@@ -6,20 +6,24 @@
   requirements:
     - !type:RoleTimeRequirement
       role: JobWarden
-      time: 36000 #10 hrs # Corvax-RoleTime
-#    - !type:RoleTimeRequirement
-#      role: JobSecurityOfficer
-#      time: 36000 #10 hrs
+      time: 10h # Corvax-RoleTime 1
+    #- !type:RoleTimeRequirement
+    #  role: JobDetective
+    #  time: 1h # knowing how to use the tools is important
+    #- !type:RoleTimeRequirement
+    #  role: JobSecurityOfficer
+    #  time: 5h
     - !type:DepartmentTimeRequirement
       department: Security
-      time: 108000 #50 hrs # Corvax-RoleTime
-#    - !type:OverallPlaytimeRequirement
-#      time: 144000 #40 hrs
-  weight: 10
+      time: 50h # Corvax-RoleTime 10
+    - !type:TraitsRequirement #Corvax-TraitsRequirement
+      inverted: true
+      traits:
+      - Muted
   startingGear: HoSGear
   icon: "JobIconHeadOfSecurity"
   supervisors: job-supervisors-captain
-  canBeAntag: false
+  guides: [ Command ] # TODO: should have a more specific guidebook page instead of using the department itself
   access:
   - HeadOfSecurity
   - Command
@@ -27,10 +31,11 @@
   - Security
   - Armory
   - Maintenance
-  - Service
   - External
   - Detective
   - Cryogenics
+  - GenpopEnter
+  - GenpopLeave
   special:
   - !type:AddImplantSpecial
     implants: [ MindShieldImplant ]
@@ -50,3 +55,12 @@
     back:
     - Flash
     - MagazinePistol
+
+- type: chameleonOutfit
+  id: HeadOfSecurityChameleonOutfit
+  job: HeadOfSecurity
+  hasMindShield: true
+  equipment:
+    head: ClothingHeadHatBeretHoS
+    mask: ClothingMaskGasSecurity
+    neck: ClothingNeckCloakHos

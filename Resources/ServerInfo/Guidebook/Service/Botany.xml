@@ -10,7 +10,7 @@
 
   ## Гидропонный лоток
   <Box>
-    <GuideEntityEmbed Entity="hydroponicsTray"/>
+    <GuideEntityEmbed Entity="HydroponicsTray"/>
   </Box>
   Это гидропонный лоток, в нём выращивают растения с помощью воды. Сначала наполните лоток водой, затем добавьте семена.
   Лампочки гидропонного лотка сообщают о разных вещах в зависимости от цвета и положения:
@@ -62,7 +62,7 @@
 Чем больше нестабильного мутагена вы используете, тем больше мутаций вы получите. Поскольку многие гены важны для выживания, большинство мутаций приведут к гибели растения.
 
 <Box>
-<GuideEntityEmbed Entity="UnstableMutagenChemistryBottle"/>
+<GuideEntityEmbed Entity="ChemistryBottleUnstableMutagen"/>
 </Box>
 
 ## Перекрёстное опыление
@@ -80,8 +80,7 @@ Some chemicals have special effects on plants.
 
 <GuideReagentEmbed Reagent="Dylovene"/>
 <GuideReagentEmbed Reagent="Cryoxadone"/>
-<GuideReagentEmbed Reagent="Necrosol"/>
 <GuideReagentEmbed Reagent="Phalanximine"/>
 <GuideReagentGroupEmbed Group="Botanical"/>
-  
+
 </Document>

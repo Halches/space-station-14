@@ -6,23 +6,29 @@
   requirements:
     - !type:DepartmentTimeRequirement
       department: Engineering
-      time: 18000 #5 hrs # Corvax-RoleTime
+      time: 5h # Corvax-RoleTime 2.5h
     - !type:DepartmentTimeRequirement
       department: Medical
-      time: 18000 #5 hrs # Corvax-RoleTime
+      time: 5h # Corvax-RoleTime 2.5h
+    - !type:DepartmentTimeRequirement
+      department: Science
+      time: 2.5h
     - !type:DepartmentTimeRequirement
       department: Security
-      time: 18000 #5 hrs # Corvax-RoleTime
+      time: 5h # Corvax-RoleTime 2.5h
 #    - !type:DepartmentTimeRequirement
 #      department: Command
-#      time: 72000 # 20 hrs
+#      time: 2.5h
     - !type:OverallPlaytimeRequirement
-      time: 180000 #50 hrs # Corvax-RoleTime
-  weight: 20
+      time: 50h # Corvax-RoleTime
+    - !type:TraitsRequirement #Corvax-TraitsRequirement
+      inverted: true
+      traits:
+      - Muted
   startingGear: HoPGear
   icon: "JobIconHeadOfPersonnel"
   supervisors: job-supervisors-captain
-  canBeAntag: false
+  guides: [ Command ] # TODO: should have a more specific guidebook page instead of using the department itself
   access:
   - Command
   - HeadOfPersonnel
@@ -50,6 +56,8 @@
   - Cargo
   - Atmospherics
   - Medical
+  - GenpopEnter
+  - GenpopLeave
   special:
   - !type:AddImplantSpecial
     implants: [ MindShieldImplant ]
@@ -64,7 +72,20 @@
     id: HoPPDA
     gloves: ClothingHandsGlovesHop
     ears: ClothingHeadsetAltCommand
-    belt: BoxFolderClipboard
+    belt: BoxFolderClipboardThreePapers
+    eyes: ClothingEyesHudCommand
   storage:
     back:
     - Flash
+
+- type: chameleonOutfit
+  id: HeadOfPersonnelChameleonOutfit
+  job: HeadOfPersonnel
+  hasMindShield: true
+  equipment:
+    head: ClothingHeadHatHopcap
+    eyes: ClothingEyesHudCommand
+    mask: ClothingMaskNeckGaiterRed
+    neck: ClothingNeckCloakHop
+    outerClothing: ClothingOuterWinterHoP
+
